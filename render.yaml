@@ -1,0 +1,12 @@
+# render.yaml
+
+services:
+  - type: python
+    env: python-3.9
+    commands:
+      - pip install -r requirements.txt
+      - python main.py
+    ports:
+      - 443
+    artifacts:
+      - "./main.py"
