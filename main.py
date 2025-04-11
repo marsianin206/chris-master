@@ -8,14 +8,16 @@ import asyncio
 from random import choice
 import json
 from typing import List
+import contextlib
 from datetime import datetime, timedelta
 from highrise.models import SessionMetadata
 import re
-from highrise.models import SessionMetadata,  GetMessagesRequest, User ,Item, Position, CurrencyItem, Reaction
+from highrise.models import SessionMetadata, GetMessagesRequest, User, Item, Position, CurrencyItem, Reaction
 from typing import Any, Dict, Union
 from emotes import Emotes
+
 dance_group = set()
-moderators = ['Alionardo_','Sampire_',"1_on_1:62b272df4de9bb2d9d04d01c:65fa951fc153ecea0f38e1e2","1_on_1:658028e11664da0f08fc35b7:65fa951fc153ecea0f38e1e2"]
+moderators = ['X.FEAR', 'X.FEAR', "X.FEAR:62e86343d99a0bb4471669e6:62e86343d99a0bb4471669e6", "X.FEAR:62e86343d99a0bb4471669e6:62e86343d99a0bb4471669e6"]
 
 class BotDefinition:
     
@@ -29,13 +31,13 @@ class BotDefinition:
 class Counter:
     bot_id = ""
     static_ctr = 0
-    usernames = ['Alionardo_']
+    usernames = ['X.FEAR']
 
 class Bot(BaseBot):
     continuous_emote_tasks: Dict[int, asyncio.Task[Any]] = {}  
     user_data: Dict[int, Dict[str, Any]] = {}
     continuous_emote_task = None
-    cooldowns = {}  # Class-level variable to store cooldown timestamps
+    cooldowns = {}  
     emote_looping = False
 
     def __init__(self):
@@ -46,9 +48,8 @@ class Bot(BaseBot):
         self.load_temporary_vips()
         self.following_username = None
         self.maze_players = {}
-        self.user_points = {}  # Dictionary to store user points
+        self.user_points = {}  
         self.Emotes = Emotes
-      
 
     def load_temporary_vips(self):
         try:
@@ -56,9 +57,11 @@ class Bot(BaseBot):
                 self.temporary_vips = json.load(file)
         except FileNotFoundError:
             self.temporary_vips = {}
+
     def save_temporary_vips(self):
         with open("temporary.json", "w") as file:
             json.dump(self.temporary_vips, file)
+
     def load_moderators(self):
         try:
             with open("moderators.json", "r") as file:
@@ -66,136 +69,136 @@ class Bot(BaseBot):
         except FileNotFoundError:
             self.moderators = []
 
-        # Add default moderators here
-        default_moderators = ['Alionardo_']
+        default_moderators = ['X.FEAR']
         for mod in default_moderators:
             if mod.lower() not in self.moderators:
                 self.moderators.append(mod.lower())
+
     def load_fans(self):
-      try:
-          with open("fans.json", "r") as file:
-              self.fans = json.load(file)
-      except FileNotFoundError:
-          self.fans = []   
+        try:
+            with open("fans.json", "r") as file:
+                self.fans = json.load(file)
+        except FileNotFoundError:
+            self.fans = []   
+
     def load_membership(self):
-     try:
-        with open("membership.json", "r") as file:
-            self.membership = json.load(file)
-     except FileNotFoundError:
-        self.membership = []
+        try:
+            with open("membership.json", "r") as file:
+                self.membership = json.load(file)
+        except FileNotFoundError:
+            self.membership = []
+
     def save_membership(self):
-     with open("membership.json", "w") as file:
-        json.dump(self.membership, file)
+        with open("membership.json", "w") as file:
+            json.dump(self.membership, file)
+
     def save_moderators(self):
-
-      with open("moderators.json", "w") as file:
+        with open("moderators.json", "w") as file:
             json.dump(self.moderators, file)
+
     def save_fans(self):
+        with open("fans.json", "w") as file:
+            json.dump(self.fans, file)
 
-      with open("fans.json", "w") as file:
-          json.dump(self.fans, file)
-   
-
-    async def on_emote(self, user: User ,emote_id : str , receiver: User | None )-> None:
-      print (f"{user.username} , {emote_id}")
+    async def on_emote(self, user: User, emote_id: str, receiver: User | None) -> None:
+        print(f"{user.username} использовал эмоцию {emote_id}")
 
     async def on_user_join(self, user: User, position: Position | AnchorPosition) -> None:
-     
-     try:
+        try:
+            await self.highrise.send_whisper(user.id, f"Привет, {user.username}!\nДобро пожаловать в нашу семью! 🎉\nНапишите 'join' или 'subscribe', чтобы получать обновления о предстоящих событиях в <#FF0000>ЛОФТ - <#F60000> ЗНАКОМСТВА 💌\n• Используйте !list или -list для просмотра доступных команд.")
+            await self.highrise.send_emote('sit-relaxed')
+        except Exception as e:
+            print(f"Ошибка при входе пользователя: {e}") 
 
-        await self.highrise.send_whisper(user.id,f"hello {user.username}\nJOIN OUR FAMILY \nDm me 'join' or 'subscribe' to get updated with all upcoming eventing in <#b53bf2>☁️FIND A BEAUTY☁<#ffffff>\n• !list or -list \n  to veiw the functions")
-        await self.highrise.send_emote('sit-relaxed')
-     except Exception as e:
-            print(f"An error on user_on_join: {e}") 
-    async def userinfo (self: BaseBot, user: User, message: str) -> None:
-      #Split the message into parts
-      parts = message.split(" ")
-      if len(parts) != 2:
-          await self.highrise.chat("Incorrect format, please use /userinfo <@username>")
-          return
-      #Removes the @ from the username if it exists
-      if parts[1].startswith("@"):
-          username = parts[1][1:]
-      else:
-          username = parts[1]
-      #Get the user id from the username
-      user = await self.webapi.get_users(username = username, limit=1)
-      if user:
-          user_id = user.users[0].user_id
-      else:
-          await self.highrise.chat("User not found, please specify a valid user")
-          return
+    async def userinfo(self: BaseBot, user: User, message: str) -> None:
+        parts = message.split(" ")
+        if len(parts) != 2:
+            await self.highrise.chat("Неправильный формат, используйте: /userinfo <@username>")
+            return
 
-      #Get the user info
-      userinfo = await self.webapi.get_user(user_id)
-      number_of_followers = userinfo.user.num_followers
-      number_of_friends = userinfo.user.num_friends
-      number_of_folowing = userinfo.user.num_following
-      joined_at = (userinfo.user.joined_at).strftime("%d/%m/%Y %H:%M:%S")
-      try:
-          last_login = (userinfo.user.last_online_in).strftime("%d/%m/%Y %H:%M:%S")
-      except:
-          last_login = "Last login not available"
-      #Get the number of posts and the most liked post
-      userposts = await self.webapi.get_posts(author_id = user_id)
-      number_of_posts = 0
-      most_likes_post = 0
-      try:
-          while userposts.last_id != "":
-              for post in userposts.posts:
-                  if post.num_likes > most_likes_post:
-                      most_likes_post = post.num_likes
-                  number_of_posts += 1
-              userposts = await self.webapi.get_posts(author_id = user_id, starts_after=userposts.last_id)
-      except Exception as e:
-          print (e)
+        if parts[1].startswith("@"):
+            username = parts[1][1:]
+        else:
+            username = parts[1]
 
-      #Send the info to the chat
-      await self.highrise.chat(f"""\nUser: {username}\nNumber of followers: {number_of_followers}\nNumber of friends: {number_of_friends}\nNumber of following: {number_of_folowing}\nJoined at: {joined_at}\nLast login: {last_login}\nNumber of posts: {number_of_posts}\nMost likes in a post: {most_likes_post}""")
+        user = await self.webapi.get_users(username=username, limit=1)
+        if user:
+            user_id = user.users[0].user_id
+        else:
+            await self.highrise.chat("Пользователь не найден, укажите правильное имя.")
+            return
+
+        userinfo = await self.webapi.get_user(user_id)
+        number_of_followers = userinfo.user.num_followers
+        number_of_friends = userinfo.user.num_friends
+        number_of_following = userinfo.user.num_following
+        joined_at = (userinfo.user.joined_at).strftime("%d/%m/%Y %H:%M:%S")
+
+        try:
+            last_login = (userinfo.user.last_online_in).strftime("%d/%m/%Y %H:%M:%S")
+        except:
+            last_login = "Последний вход недоступен"
+
+        userposts = await self.webapi.get_posts(author_id=user_id)
+        number_of_posts = 0
+        most_likes_post = 0
+
+        try:
+            while userposts.last_id != "":
+                for post in userposts.posts:
+                    if post.num_likes > most_likes_post:
+                        most_likes_post = post.num_likes
+                    number_of_posts += 1
+                userposts = await self.webapi.get_posts(author_id=user_id, starts_after=userposts.last_id)
+        except Exception as e:
+            print(e)
+
+        await self.highrise.chat(f"""\n👤 Пользователь: {username}\n👥 Подписчиков: {number_of_followers}\n👫 Друзей: {number_of_friends}\n➡️ Подписок: {number_of_following}\n📅 Дата регистрации: {joined_at}\n⏳ Последний вход: {last_login}\n📝 Количество постов: {number_of_posts}\n❤️ Больше всего лайков на посте: {most_likes_post}""")
+
     async def on_user_leave(self, user: User, position: Position | AnchorPosition) -> None:
-      try:
-        print(f"{user.username} has left the room")
-        await self.highrise.chat(f"  {user.username} left the room")
-        if user.id in dance_group:
-             dance_group.discard(user.id)
-      except Exception as e:
-         print(f"An error on user_on_join: {e}") 
-      
-    
+        try:
+            print(f"{user.username} покинул комнату")
+            await self.highrise.chat(f"🚪 {user.username} покинул комнату")
+            if user.id in dance_group:
+                dance_group.discard(user.id)
+        except Exception as e:
+            print(f"Ошибка при выходе пользователя: {e}") 
+
     async def get_emote_E(self, target) -> None: 
-      try:
-         emote_info = self.Emotes.get(target)
-         return emote_info
-      except ValueError:
-        pass
+        try:
+            emote_info = self.Emotes.get(target)
+            return emote_info
+        except ValueError:
+            pass
+
     async def teleport_user_next_to(self, target_username: str, requester_user: User):
-      room_users = await self.highrise.get_room_users()
-      requester_position = None
+        room_users = await self.highrise.get_room_users()
+        requester_position = None
 
-      for user, position in room_users.content:
-        if user.id == requester_user.id:
-            requester_position = position
-            break
-      for user, position in room_users.content:
-        if user.username.lower() == target_username.lower(): 
-          z = requester_position.z 
-          new_z = z + 1 
+        for user, position in room_users.content:
+            if user.id == requester_user.id:
+                requester_position = position
+                break
 
-          user_dict = {
-            "id": user.id,
-            "position": Position(requester_position.x, requester_position.y, new_z, requester_position.facing)
-          }
-          await self.highrise.teleport(user_dict["id"], user_dict["position"])
+        for user, position in room_users.content:
+            if user.username.lower() == target_username.lower(): 
+                z = requester_position.z 
+                new_z = z + 1 
 
-
+                user_dict = {
+                    "id": user.id,
+                    "position": Position(requester_position.x, requester_position.y, new_z, requester_position.facing)
+                }
+                await self.highrise.teleport(user_dict["id"], user_dict["position"])
 
     async def stop_continuous_emote(self, user_id: int):
-      if user_id in self.continuous_emote_tasks and not self.continuous_emote_tasks[user_id].cancelled():
-          task = self.continuous_emote_tasks[user_id]
-          task.cancel()
-          with contextlib.suppress(asyncio.CancelledError):
-              await task
-          del self.continuous_emote_tasks[user_id]
+        if user_id in self.continuous_emote_tasks and not self.continuous_emote_tasks[user_id].cancelled():
+            task = self.continuous_emote_tasks[user_id]
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+            del self.continuous_emote_tasks[user_id]
+
    
     async def send_continuous_emote(self, emote_text ,user_id,emote_time):
             try:
@@ -211,7 +214,7 @@ class Bot(BaseBot):
         await __main__.main(definitions) 
     async def on_reaction(self, user: User, reaction: Reaction, receiver: User) -> None:
      try:
-        if user.username == "Alionardo_" or user.username == "ChristianSalon" : 
+        if user.username == "X.FEAR" or user.username == "X.FEAR" : 
            if reaction == "heart":
              await self.highrise.chat(f"{receiver.username} is now a Permanent VIP, given by {user.username}")
 
@@ -221,7 +224,7 @@ class Bot(BaseBot):
                 self.save_moderators()
 
 
-        if user.username == "Alionardo_" or user.username == "ChristianSalon" :
+        if user.username == "X.FEAR" or user.username == "X.FEAR" :
           if reaction == "wink":
               await self.highrise.chat(f"{receiver.username} is now a Temporary VIP, given by {user.username}")
 
@@ -231,11 +234,11 @@ class Bot(BaseBot):
                     self.save_temporary_vips()
         if reaction =="thumbs" and user.username.lower() in self.moderators:
            target_username = receiver.username
-           if target_username not in ["Alionardo_","ChristianSalon"]:
+           if target_username not in ["X.FEAR","X.FEAR"]:
               await self.teleport_user_next_to(target_username, user)
 
 
-        if user.username in ["Alionardo_", "ChristianSalon"] and reaction == "clap":
+        if user.username in ["X.FEAR", "X.FEAR"] and reaction == "clap":
             await self.highrise.chat(f"{receiver.username} is remove from the commands by {user.username}")
 
             receiver_username = receiver.username.lower()
@@ -406,20 +409,20 @@ class Bot(BaseBot):
         
         
          if message == "!tip5":
-              if user.username == "ChristianSalon" :
+              if user.username == "X.FEAR" :
                 roomUsers = (await self.highrise.get_room_users()).content
                 for roomUser, _ in roomUsers:
                   await self.highrise.tip_user(roomUser.id, "gold_bar_5")
               else: 
-                await  self.highrise.send_whisper(user.id, f"Only @ChristianSalon can use tip!")
+                await  self.highrise.send_whisper(user.id, f"Only @X.FEAR can use tip!")
 
          if message == "!tip1":
-              if user.username == "ChristianSalon":
+              if user.username == "X.FEAR":
                 roomUsers = (await self.highrise.get_room_users()).content
                 for roomUser, _ in roomUsers:
                   await self.highrise.tip_user(roomUser.id, "gold_bar_1")
               else: 
-                await  self.highrise.send_whisper(user.id, f"Only the @ChristianSalon can use tip!")
+                await  self.highrise.send_whisper(user.id, f"Only the @X.FEAR can use tip!")
 
                 
 
@@ -439,7 +442,7 @@ class Bot(BaseBot):
            await self.highrise.chat(f"\n\n        RULES\n ____________________________\n 1. NO UNDERAGE \n 2. No advertising\n 3. No hate speech \n 4. No begging (those trash will be immediately banned 🚫) \n 5. No spamming ")
          if message.lower().lstrip().startswith(("-feedback", "!feedback")):
                     await self.highrise.send_whisper(user.id, "• [ Submit Feedback ]\\Thank you for joining our room! \n We value your feedback,")
-                    await self.highrise.send_whisper(user.id,"Please share your feedback/suggestions with @Alionardo_ to improve our environment. Your contributions are valuable and will help us improve.")  
+                    await self.highrise.send_whisper(user.id,"Please share your feedback/suggestions with @X.FEAR to improve our environment. Your contributions are valuable and will help us improve.")  
 
          if message.lower().lstrip().startswith(("-emote", "!emote")):
                 await self.highrise.send_whisper(user.id, "\n• Emote can be used either by EMOTE NAME  or by NUMBERS")
@@ -458,7 +461,7 @@ class Bot(BaseBot):
             args = parts[1:]
 
             if len(args) < 1:
-                await self.highrise.send_whisper(user.id, f"Kullanım: !{parçalar[0]} <@Alionardo_>")
+                await self.highrise.send_whisper(user.id, f"Kullanım: !{parçalar[0]} <@X.FEAR>")
                 return
             elif args[0][0] != "@":
                 await self.highrise.send_whisper(user.id, "Invalid user format. Please use '@username'.")
@@ -477,7 +480,7 @@ class Bot(BaseBot):
                   if user.username.lower() in self.moderators:
                     await self.highrise.teleport(user_id, Position(12.5, 18.75,3.5))
                 if message.startswith("!giveVip"):   
-                   if user.username == "Alionardo_" or user.username == "ChristianSalon" :
+                   if user.username == "X.FEAR" or user.username == "X.FEAR" :
                      if user_name.lower() not in self.membership:
                        self.membership.append(user_name)
                        self.save_membership()
@@ -511,15 +514,15 @@ class Bot(BaseBot):
                         return
                     await self.highrise.teleport(user_id, Position(your_pos))
                     
-                if message.startswith("!tip1") and user.username  ==  "ChristianSalon":
+                if message.startswith("!tip1") and user.username  ==  "X.FEAR":
                     await self.highrise.tip_user(user_id, "gold_bar_1")
-                if message.startswith("!tip5") and user.username  == "ChristianSalon" :
+                if message.startswith("!tip5") and user.username  == "X.FEAR" :
                     await self.highrise.tip_user(user_id, "gold_bar_5")
-                if message.startswith("!tip10") and user.username  ==  "ChristianSalon" :
+                if message.startswith("!tip10") and user.username  ==  "X.FEAR" :
                   await self.highrise.tip_user(user_id, "gold_bar_10")
-                if message.startswith("!tip50") and user.username  == "ChristianSalon"  :
+                if message.startswith("!tip50") and user.username  == "X.FEAR"  :
                   await self.highrise.tip_user(user_id, "gold_bar_50")
-                if message.startswith("!tip500") and user.username  ==  "ChristianSalon" :
+                if message.startswith("!tip500") and user.username  ==  "X.FEAR" :
                   await self.highrise.tip_user(user_id, "gold_bar_500")
                 
             except Exception as e:
@@ -544,7 +547,7 @@ class Bot(BaseBot):
        
          if message.startswith('vip') :
             if user.username.lower() in self.moderators or user.username.lower() in self.membership :    
-              await self.highrise.teleport(f"{user.id}", Position(12.5, 18.75,3.5))
+              await self.highrise.teleport(f"{user.id}", Position(10.0, 16.0,3.0))
          if message.startswith('jail') :
               if user.username.lower() in self.moderators:    
                 await self.highrise.teleport(f"{user.id}", Position(3.5,8.5,1.5))
@@ -1274,9 +1277,9 @@ class Bot(BaseBot):
 
   
     async def on_message(self, user_id: str, conversation_id: str, is_new_conversation: bool) -> None:
-        _bid = "051df02b6f323b9e4613f0bba52e92f9ea27c46b77a637e121c80cafbddff50a"
-        _id = f"1_on_1:{_bid}:{user_id}"
-        _idx = f"1_on_1:{user_id}:{_bid}"
+        _bid = "27bf7252d9342c3e65461804d65267ba033b338b966a81ee818e1ab8a6be4a2c"
+        _id = f"X.FEAR:{_bid}:{user_id}"
+        _idx = f"X.FEAR:{user_id}:{_bid}"
         _rid = "65f580b559ba97fdcb699997" 
         response = await self.highrise.get_messages(conversation_id)
         if isinstance(response, GetMessagesRequest.GetMessagesResponse):
@@ -1373,9 +1376,9 @@ class Bot(BaseBot):
 
           for conversation_id in self.fans:
             try:
-              __id = f"1_on_1:{_bid}:{user_id}"
-              __idx = f"1_on_1:{user_id}:{_bid}"
-              __rid = "65f580b559ba97fdcb699997"
+              __id = f"X.FEAR:{_bid}:{user_id}"
+              __idx = f"X.FEAR:{user_id}:{_bid}"
+              __rid = "62e86343d99a0bb4471669e6"
               await self.highrise.send_message(conversation_id, "Its time!, come join our party", "invite", __rid)
               await asyncio.sleep(2)
               await self.highrise.send_message(conversation_id, "Its time!, Come join our party!🎫")
@@ -1400,7 +1403,7 @@ class Bot(BaseBot):
     
     async def on_user_move(self, user: User, pos: Position) -> None:
          emote_id = None
-         if user.username == "Alionardo_":
+         if user.username == "X.FEAR":
            print(pos)
            
          if not isinstance(pos,Position) :return
@@ -1435,8 +1438,9 @@ class Bot(BaseBot):
                     await asyncio.sleep(emote_duration)
                 
             except ConnectionResetError:
-               if message.lower().lstrip().startswith("loop"):
-                parts = message.split("6 ")
+               # Ensure 'message' is defined or passed as a parameter
+               if hasattr(self, 'last_message') and self.last_message.lower().lstrip().startswith("loop"):
+                parts = self.last_message.split("6 ")
                 if len(parts) < 2:
                     await self.highrise.chat("Invalid command format. Usage: loop<emote_name> ")
                     return
@@ -1465,14 +1469,14 @@ class Bot(BaseBot):
     async def on_start(self, session_metadata: SessionMetadata) -> None:
       try:
         Counter.bot_id = session_metadata.user_id
-        print("Ali is booting ...")
+        print("ЗАГРУЖАЮСЬ ...")
         pass
 
 
-        self.highrise.tg.create_task(self.highrise.walk_to(Position(x=8.5, y=1.0, z=1.5, facing='FrontRight')))
+        self.highrise.tg.create_task(self.highrise.walk_to(Position(x=5.5, y=0.0, z=11.5, facing='FrontRight')))
         self.load_temporary_vips()
 
-        await self.highrise.chat(f"hi guys im here ")
+        await self.highrise.chat(f"...")
       except Exception as e:
           print(f"An exception occured: {e}")  
 
@@ -1485,6 +1489,6 @@ class Bot(BaseBot):
 
 
 if __name__ == "__main__":
-    room_id = authorization.room
-    token = authorization.token
+    room_id = "your_room_id_here"  # Replace with your actual room ID
+    token = "your_api_token_here"  # Replace with your actual API token
     arun(Bot().run(room_id, token))
